@@ -1,0 +1,31 @@
+# General ignores for the monorepo root and common sensitive files
+
+# Operating System specific files
+.DS_Store
+
+# Environment variables (crucial to ignore sensitive info)
+.env* # Catches .env, .env.development, .env.production etc.
+
+# IDE/Editor specific files (if they appear at the root level)
+.vscode/                         # VS Code settings at the root (unless specifically shared)
+.idea/                           # IntelliJ/Android Studio project files at the root
+*.iml                            # IntelliJ/Android Studio module files at the root
+
+# Common temporary/backup files
+*.swp
+*.swo
+*.bak
+*~
+*.tmp
+*.log
+
+# Compiled application artifacts (if they somehow end up at the root)
+*.apk
+*.ipa
+
+# General configuration files
+*.properties                     # Catches general properties files, including potential Mapbox token file if not in .env
+
+# Docker-related ignores (if Docker files generate local artifacts at the root)
+.dockerignore
+.docker/

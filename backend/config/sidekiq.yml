@@ -1,0 +1,5 @@
+# kapsul/backend/config/sidekiq.yml
+# Configuration for Sidekiq, our background job processor.
+:concurrency: 5 # Number of jobs Sidekiq can process simultaneously. Adjust based on server resources.
+:queues:
+  - default # The default queue for jobs. You can define more queues for different job types.

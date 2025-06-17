@@ -1,0 +1,63 @@
+# kapsul/docker-compose.yml
+version: '3.8' # Specify the Docker Compose file format version
+
+services:
+  db:
+    image: postgres:16.4-alpine # PostGIS image includes PostgreSQL
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persist database data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: kapsul_development
+    ports:
+      - "5432:5432" # Map container port to host port
+
+  redis:
+    image: redis:7.2-alpine # Lightweight Redis image
+    ports:
+      - "6379:6379" # Map container port to host port
+
+  rails:
+    build:
+      context: ./backend # Build from Dockerfile in ./backend
+      dockerfile: Dockerfile
+    command: >
+     bash -c "while ! pg_isready -h db -p 5432 -U postgres; do
+                     echo 'Waiting for PostgreSQL to be ready...';
+                     sleep 1;
+                   done;
+                   rm -f tmp/pids/server.pid &&
+                   bundle exec rails db:create db:migrate &&
+                   bundle exec rails server -b 0.0.0.0" # Create/migrate DB, then start server
+    volumes:
+      - ./backend:/kapsul/backend # Mount local code for live changes
+        #- bundle_cache:/usr/local/bundle # Cache gems
+    ports:
+      - "3000:3000" # Map Rails server port
+    depends_on:
+      - db
+      - redis # Ensure db and redis are up first
+    environment:
+      RAILS_ENV: development
+      DATABASE_URL: postgres://postgres:password@db:5432/kapsul_development
+      REDIS_URL: redis://redis:6379/0
+
+  sidekiq:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: bundle exec sidekiq -C config/sidekiq.yml # Start Sidekiq worker
+    volumes:
+      - ./backend:/kapsul/backend
+        #- bundle_cache:/usr/local/bundle
+    depends_on:
+      - rails # Depend on rails (which runs migrations first)
+      - redis
+    environment:
+      RAILS_ENV: development
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgres://postgres:password@db:5432/kapsul_development
+
+volumes:
+  postgres_data:
